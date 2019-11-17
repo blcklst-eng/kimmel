@@ -1,0 +1,89 @@
+version: 2
+
+aliases:
+  - &docker
+    - image: circleci/ruby:2.6.3
+      environment:
+        DATABASE_HOST: 127.0.0.1
+        DATABASE_USERNAME: messaging
+        DATABASE_PASSWORD: ""
+        RAILS_ENV: test
+        HOST: kimmel-messaging.com
+    - image: postgres:10.4
+      environment:
+        POSTGRES_USER: messaging
+        POSTGRES_DB: messaging_test
+        POSTGRES_PASSWORD: ""
+    - image: docker.elastic.co/elasticsearch/elasticsearch:6.2.3
+
+  - &restore-cache
+    keys:
+      - messaging-api-{{ checksum "Gemfile.lock" }}
+      # fallback to using the latest cache if no exact match is found
+      - messaging-api-
+
+  - &save-cache
+    paths:
+      - ./vendor/bundle
+    key: messaging-api-{{ checksum "Gemfile.lock" }}
+
+defaults: &defaults
+  working_directory: ~/messaging
+  docker: *docker
+
+jobs:
+  build:
+    <<: *defaults
+    steps:
+      - checkout
+
+      # Download and cache dependencies
+      - restore_cache: *restore-cache
+
+      - run:
+          name: install dependencies
+          command: |
+            bundle install --jobs=4 --retry=3 --path vendor/bundle
+
+      - save_cache: *save-cache
+
+  test:
+    <<: *defaults
+    steps:
+      - checkout
+      - restore_cache: *restore-cache
+
+      # Set bundle path to point to cache
+      - run: bundle config --local path vendor/bundle
+
+      # Wait for DB
+      - run: dockerize -wait tcp://localhost:5432 -timeout 1m
+
+      # Setup the database
+      - run: bundle exec rake db:create
+      - run: bundle exec rake db:schema:load
+      # Run the tests
+      - run: CI=true bundle exec rake
+
+  lint:
+    <<: *defaults
+    steps:
+      - checkout
+      - restore_cache: *restore-cache
+
+      # Set bundle path to point to cache
+      - run: bundle config --local path vendor/bundle
+
+      - run: rake standard STANDARDOPTS="--format progress"
+
+workflows:
+  version: 2
+  build_test_lint:
+    jobs:
+      - build
+      - test:
+          requires:
+            - build
+      - lint:
+          requires:
+            - build

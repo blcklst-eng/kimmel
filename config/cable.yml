@@ -1,0 +1,19 @@
+default: &default
+  adapter: redis
+
+development:
+  <<: *default
+  channel_prefix: messaging_development
+
+test:
+  adapter: async
+
+staging:
+  <<: *default
+  url: <%= ENV.fetch("REDIS_URL") { "locahost:6379" } %>
+  channel_prefix: messaging_staging
+
+production:
+  <<: *default
+  url: <%= ENV.fetch("REDIS_URL") { "locahost:6379" } %>
+  channel_prefix: messaging_production

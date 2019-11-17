@@ -1,0 +1,44 @@
+# 
+# This file is to manage the specific consumer: CreateUserConsumer
+#
+# To start this worker, just one, you can run `sudo systemctl start CreateUserConsumer@1.service
+#
+# To start 10 workers, you can run `sudo systemctl start CreateUserConsumer@{1..10}.service
+# which creates 10 worker instances of CreateUserConsumer service.
+# These can be managed on a per instance basis by referring to CreateUserConsumer@5 for
+# the 5th instance. Or you can use the shorthand syntax to manage all or more than one...
+# `sudo systemctl restart CreateUserConsumer@{1..10}.service` which will restart all 10.
+#
+# When `app.service` is restarted, then all consumers will be automatically restarted,
+# as per [Unit] PartOf directive.
+#
+# %i will be replaced with whatever comes after @ in `systemctl start CreateUserConsumer@Instance.service`
+#
+[Unit]
+Description=CreateUserConsumer %i
+After=syslog.target network.target
+PartOf=app.service
+
+[Service]
+# Foreground process (do not use --daemon in ExecStart or config.rb)
+Type=simple
+
+# Preferably configure a non-privileged user
+User=deploy
+
+# The path to the puma application root
+# Also replace the "<WD>" place holders below with this path.
+WorkingDirectory=/home/deploy/server/api/current
+
+ExecStart=/home/deploy/.rbenv/shims/bundle exec racecar CreateUserConsumer
+Restart=always
+
+# output goes to /var/log/syslog
+StandardOutput=syslog
+StandardError=syslog
+
+# This will default to "bundler" if we don't specify it
+SyslogIdentifier=CreateUserConsumer%i
+
+[Install]
+WantedBy=multi-user.target
