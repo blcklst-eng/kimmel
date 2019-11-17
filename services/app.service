@@ -1,0 +1,31 @@
+# 
+# This is the main service for the entire application. Most other services will
+# be a PartOf this service. When this restarts, all parts of the application will restart.
+#
+[Unit]
+Description=Puma HTTP Server
+After=syslog.target network.target
+
+[Service]
+# Foreground process (do not use --daemon in ExecStart or config.rb)
+Type=simple
+
+# Preferably configure a non-privileged user
+User=deploy
+
+WorkingDirectory=/home/deploy/server/api/current
+
+# Environment=PUMA_DEBUG=1
+ExecStart=/home/deploy/.rbenv/shims/bundle exec puma -b "unix:///home/deploy/server/api/puma.sock" --pidfile "/home/deploy/server/api/puma.pid"
+PIDFile=/home/deploy/server/api/puma.pid
+Restart=always
+
+# output goes to /var/log/syslog
+StandardOutput=syslog
+StandardError=syslog
+
+# This will default to "bundler" if we don't specify it
+SyslogIdentifier=puma
+
+[Install]
+WantedBy=multi-user.target

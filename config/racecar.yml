@@ -1,0 +1,30 @@
+# These config values will be shared by all environments but can be overridden.
+common: &common
+  client_id: "nexus"
+
+sasl: &sasl
+  ssl_ca_certs_from_system: true
+  sasl_plain_username: <%= Rails.application.credentials.dig(Rails.env.to_sym, :kafka_username) %>
+  sasl_plain_password: <%= Rails.application.credentials.dig(Rails.env.to_sym, :kafka_password) %>
+
+development:
+  <<: *common
+  brokers:
+    - localhost:9092
+
+test:
+  <<: *common
+  brokers:
+    - localhost:9092
+
+staging:
+  <<: *common
+  <<: *sasl
+  brokers:
+    - pkc-e0x5p.us-east1.gcp.confluent.cloud:9092
+
+production:
+  <<: *common
+  <<: *sasl
+  brokers:
+    - pkc-e0x5p.us-east1.gcp.confluent.cloud:9092

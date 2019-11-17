@@ -1,0 +1,16 @@
+default: &default
+  url: http://localhost:9200
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+
+staging:
+  <<: *default
+  url: <%= Rails.application.credentials.dig(Rails.env.to_sym, :elasticsearch_url) %>
+
+production:
+  <<: *default
+  url: <%= Rails.application.credentials.dig(Rails.env.to_sym, :elasticsearch_url) %>
